@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Attendance Dashboard</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&amp;family=DM+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 900: '#0a0f1e', 800: '#111827', 700: '#1a2236', 600: '#243049' },
+            slate2: { 400: '#8b95a9', 300: '#a3b1c6' },
+            accent: { blue: '#3b82f6', cyan: '#06b6d4', amber: '#f59e0b', red: '#ef4444', green: '#22c55e' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .sidebar-link { transition: all 0.2s ease; }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(59,130,246,0.12); color: #3b82f6; }
+    .metric-card { animation: fadeUp 0.5s ease both; transition: all 0.3s ease; }
+    .metric-card:nth-child(1) { animation-delay: 0.1s; }
+    .metric-card:nth-child(2) { animation-delay: 0.2s; }
+    .metric-card:nth-child(3) { animation-delay: 0.3s; }
+    .metric-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .status-btn { transition: all 0.15s ease; cursor: pointer; }
+    .status-btn.active-p { background: #22c55e; color: #fff; }
+    .status-btn.active-a { background: #ef4444; color: #fff; }
+    .status-btn.active-l { background: #f59e0b; color: #fff; }
+    .table-row { animation: fadeUp 0.4s ease both; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #243049; border-radius: 3px; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+</head>
+<body class="h-full bg-navy-900 text-gray-200">
+<div class="h-full w-full flex overflow-hidden">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="hidden md:flex flex-col w-64 bg-navy-800 border-r border-navy-600 flex-shrink-0 h-full">
+    <div class="p-5 border-b border-navy-600">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-accent-blue/20 flex items-center justify-center">
+          <i data-lucide="graduation-cap" class="w-5 h-5 text-accent-blue"></i>
+        </div>
+        <div>
+          <h1 id="sidebar-title" class="text-sm font-bold text-white leading-tight">SAMS</h1>
+          <p id="sidebar-dept" class="text-[10px] text-slate2-400 mono tracking-wider">B.Tech CSE</p>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 p-3 space-y-1">
+      <a href="#" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate2-400">
+        <i data-lucide="users" class="w-4 h-4"></i> Students
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate2-400">
+        <i data-lucide="book-open" class="w-4 h-4"></i> Subjects
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate2-400">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Reports
+      </a>
+    </nav>
+    <div class="p-4 border-t border-navy-600">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-accent-cyan/20 flex items-center justify-center text-accent-cyan text-xs font-bold">
+          AD
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-white">Admin</p>
+          <p class="text-[10px] text-slate2-400">admin@sams.edu</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile header -->
+  <div class="md:hidden fixed top-0 left-0 right-0 z-50 bg-navy-800 border-b border-navy-600 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-md bg-accent-blue/20 flex items-center justify-center">
+        <i data-lucide="graduation-cap" class="w-4 h-4 text-accent-blue"></i>
+      </div>
+      <span id="mobile-title" class="text-sm font-bold text-white">SAMS</span>
+    </div>
+    <button id="mobile-menu-btn" class="text-slate2-400 p-1">
+      <i data-lucide="menu" class="w-5 h-5"></i>
+    </button>
+  </div>
+
+  <!-- Main -->
+  <main class="flex-1 h-full overflow-auto">
+    <div class="p-4 md:p-8 md:pt-6 pt-16 max-w-6xl mx-auto">
+      <!-- Header -->
+      <div class="mb-6">
+        <h2 id="main-title" class="text-xl md:text-2xl font-bold text-white">Student Attendance Management</h2>
+        <p class="text-sm text-slate2-400 mt-1 mono" id="date-display"></p>
+      </div>
+
+      <!-- Metric Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="metric-card bg-navy-700 border border-navy-600 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-slate2-400 font-medium uppercase tracking-wide">Total Students</span>
+            <div class="w-8 h-8 rounded-lg bg-accent-blue/15 flex items-center justify-center">
+              <i data-lucide="users" class="w-4 h-4 text-accent-blue"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-white mono" id="metric-total-students">—</p>
+          <p class="text-xs text-slate2-400 mt-1">Loaded from backend</p>
+        </div>
+
+        <div class="metric-card bg-navy-700 border border-navy-600 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-slate2-400 font-medium uppercase tracking-wide">Total Subjects</span>
+            <div class="w-8 h-8 rounded-lg bg-accent-cyan/15 flex items-center justify-center">
+              <i data-lucide="book-open" class="w-4 h-4 text-accent-cyan"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-white mono" id="metric-total-subjects">—</p>
+          <p class="text-xs text-slate2-400 mt-1">Loaded from backend</p>
+        </div>
+
+        <div class="metric-card bg-navy-700 border border-navy-600 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-slate2-400 font-medium uppercase tracking-wide">Low Attendance</span>
+            <div class="w-8 h-8 rounded-lg bg-accent-red/15 flex items-center justify-center">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-accent-red"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-accent-red mono" id="metric-low-attendance">—</p>
+          <p class="text-xs text-accent-amber mt-1">Below 75% threshold</p>
+        </div>
+      </div>
+
+      <!-- Attendance Table -->
+      <div class="bg-navy-700 border border-navy-600 rounded-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-navy-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-white">Daily Attendance</h3>
+            <p class="text-xs text-slate2-400 mt-0.5">Mark attendance for today's classes</p>
+          </div>
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate2-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input id="search-input" type="text" placeholder="Search student..."
+                   class="bg-navy-900 border border-navy-600 rounded-lg text-sm pl-9 pr-3 py-2 text-gray-200 placeholder-slate2-400 focus:outline-none focus:border-accent-blue w-full sm:w-56">
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+            <tr class="border-b border-navy-600 text-left">
+              <th class="px-5 py-3 text-xs font-semibold text-slate2-400 uppercase tracking-wider">Student Name</th>
+              <th class="px-5 py-3 text-xs font-semibold text-slate2-400 uppercase tracking-wider">ID</th>
+              <th class="px-5 py-3 text-xs font-semibold text-slate2-400 uppercase tracking-wider hidden sm:table-cell">Subject</th>
+              <th class="px-5 py-3 text-xs font-semibold text-slate2-400 uppercase tracking-wider text-center">Status</th>
+            </tr>
+            </thead>
+            <tbody id="attendance-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let students = [];
+  let isLoading = false;
+
+  async function fetchJson(url, opts) {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} for ${url}${text ? `: ${text}` : ''}`);
+    }
+    return res.json();
+  }
+
+  async function loadStudents() {
+    students = await fetchJson('/api/students');
+    renderTable(document.getElementById('search-input').value);
+  }
+
+  async function loadDashboardStats() {
+    const stats = await fetchJson('/api/dashboard-stats');
+    document.getElementById('metric-total-students').textContent = String(stats.totalStudents);
+    document.getElementById('metric-total-subjects').textContent = String(stats.totalSubjects);
+    document.getElementById('metric-low-attendance').textContent = String(stats.lowAttendance);
+  }
+
+  function renderTable(filter = '') {
+    const body = document.getElementById('attendance-body');
+    const f = filter.toLowerCase();
+    const filtered = students.filter(s =>
+      (s.name || '').toLowerCase().includes(f) ||
+      (s.id || '').toLowerCase().includes(f)
+    );
+
+    const existingRows = new Map([...body.children].map(el => [el.dataset.studentId, el]));
+
+    filtered.forEach((s, i) => {
+      let row = existingRows.get(s.id);
+      if (row) {
+        existingRows.delete(s.id);
+        updateRowStatus(row, s.status);
+        row.querySelector('[data-student-name]').textContent = s.name;
+        row.querySelector('[data-student-subject]').textContent = s.subject;
+      } else {
+        row = createRowElement(s, i);
+        body.appendChild(row);
+      }
+    });
+
+    existingRows.forEach(row => row.remove());
+  }
+
+  function createRowElement(s, index) {
+    const row = document.createElement('tr');
+    row.className = 'table-row border-b border-navy-600/50 hover:bg-navy-600/30 transition-colors';
+    row.dataset.studentId = s.id;
+    row.style.animationDelay = `${index * 0.05}s`;
+    row.innerHTML = `
+        <td class="px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-accent-blue/15 flex items-center justify-center text-accent-blue text-xs font-bold flex-shrink-0">
+              ${(s.name || '?').split(' ').filter(Boolean).map(n => n[0]).join('').slice(0,2).toUpperCase()}
+            </div>
+            <span class="font-medium text-white" data-student-name>${s.name}</span>
+          </div>
+        </td>
+        <td class="px-5 py-3.5 mono text-slate2-400 text-xs">${s.id}</td>
+        <td class="px-5 py-3.5 text-slate2-300 hidden sm:table-cell" data-student-subject>${s.subject}</td>
+        <td class="px-5 py-3.5">
+          <div class="flex items-center justify-center gap-1" data-status-group="${s.id}">
+            ${['P','A','L'].map(st => `
+              <button
+                class="status-btn w-8 h-8 rounded-md text-xs font-bold border border-navy-600 ${s.status === st ? (st==='P'?'active-p':st==='A'?'active-a':'active-l') : 'text-slate2-400 hover:bg-navy-600'}"
+                data-status="${st}"
+                onclick="window.setStatus('${s.id}', '${s.subjectId}', '${st}')"
+              >${st}</button>
+            `).join('')}
+          </div>
+        </td>
+      `;
+    return row;
+  }
+
+  function updateRowStatus(row, newStatus) {
+    row.querySelectorAll('[data-status]').forEach(btn => {
+      btn.classList.remove('active-p', 'active-a', 'active-l', 'text-slate2-400', 'hover:bg-navy-600');
+      const st = btn.dataset.status;
+      if (st === newStatus) {
+        btn.classList.add(st === 'P' ? 'active-p' : st === 'A' ? 'active-a' : 'active-l');
+      } else {
+        btn.classList.add('text-slate2-400', 'hover:bg-navy-600');
+      }
+    });
+  }
+
+  window.setStatus = async function(studentId, subjectId, newStatus) {
+    if (isLoading) return;
+    isLoading = true;
+    try {
+      await fetchJson('/api/attendance', {
+        method: 'POST',
+        body: JSON.stringify({ studentId, subjectId, status: newStatus })
+      });
+
+      const idx = students.findIndex(s => s.id === studentId);
+      if (idx >= 0) students[idx].status = newStatus;
+      renderTable(document.getElementById('search-input').value);
+      await loadDashboardStats();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isLoading = false;
+    }
+  };
+
+  document.getElementById('search-input').addEventListener('input', e => renderTable(e.target.value));
+
+  // Date
+  const now = new Date();
+  document.getElementById('date-display').textContent = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // Mobile menu
+  document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+    const sb = document.getElementById('sidebar');
+    sb.classList.toggle('hidden');
+    sb.classList.toggle('fixed');
+    sb.classList.toggle('z-50');
+    sb.classList.toggle('inset-0');
+    sb.classList.toggle('w-64');
+  });
+
+  // Sidebar nav
+  document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+    });
+  });
+
+  (async function boot() {
+    await Promise.all([loadStudents(), loadDashboardStats()]);
+    lucide.createIcons();
+  })();
+</script>
+</body>
+</html>
+
