@@ -2,6 +2,8 @@
 
 A Spring Boot web application for managing student attendance, converted from a single-file Java OOP project into a deployable Maven structure.
 
+Live Render Url: https://sams-v72j.onrender.com/
+
 ## Tech Stack
 
 - Java 17
